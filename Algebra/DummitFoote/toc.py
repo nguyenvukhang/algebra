@@ -1,11 +1,13 @@
-from os import listdir
+from os import listdir, path
+
+__cwd__ = path.dirname(__file__)
 
 tbl = []
 
-for filename in listdir("."):
+for filename in listdir(__cwd__):
     if not filename.endswith(".lean"):
         continue
-    with open(filename, "r") as f:
+    with open(path.join(__cwd__, filename), "r") as f:
         text = f.read()
         line = text.splitlines()[0]
     assert line.startswith("-- Dummit & Foote, ")
@@ -14,6 +16,6 @@ for filename in listdir("."):
 
 tbl.sort(key=lambda v: v[1])
 
-with open("README", "w") as f:
+with open(path.join(__cwd__, "README"), "w") as f:
     for filename, line in tbl:
         print(filename, "::", line, file=f)

@@ -1,5 +1,3 @@
--- Dummit & Foote, 1.7 Group Actions
-
 import Algebra.Prelude
 
 open Function Finset
@@ -15,7 +13,7 @@ section Page43
 -- empty set.
 example [DecidableEq G] (A : Finset G) (f : G → G) (hf : Set.InjOn f A)
   : #(A.image f) = #A := card_image_iff.mpr hf
-  
+
 -- page 43 "since these groups have the same order, this map must also be
 -- surjective".
 variable [h₁ : Fintype G] [h₂ : Fintype H] (φ : G → H)

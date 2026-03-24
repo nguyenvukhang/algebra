@@ -12,7 +12,6 @@ check: generate
 	slope check
 
 generate:
-	python3 Algebra/DummitFoote/toc.py
 	slope generate Algebra.Mathlib
 
 sorry:

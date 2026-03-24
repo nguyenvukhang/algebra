@@ -1,5 +1,3 @@
--- Dummit & Foote, 1.6 Homomorphisms and Isomorphisms
-
 import Algebra.Prelude
 
 open Function

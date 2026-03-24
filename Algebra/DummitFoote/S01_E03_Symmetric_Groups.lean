@@ -1,5 +1,3 @@
--- Dummit & Foote, 1.3 Symmetric Groups
-
 import Algebra.Prelude
 
 open Function

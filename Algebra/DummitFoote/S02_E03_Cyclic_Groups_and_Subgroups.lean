@@ -2,14 +2,43 @@ import Algebra.Prelude
 
 open DihedralGroup
 
-universe u
-variable {H : Type u}
-
 open Cardinal in
-example [Fintype H] : #H = Fintype.card H := mk_fintype H
+example {H : Type*} [Fintype H] : #H = Fintype.card H := mk_fintype H
 
+-- This section gives a way to reduce the powers to the smallest possible. It's
+-- what Dummit & Foote call the "least residue" powers.
+section Prep
+variable {G : Type*} [Group G] {x : G}
+
+lemma IsOfFinOrder.exists_lt_order_eq_pow (hx : IsOfFinOrder x) (n : ℕ)
+  : ∃ m < orderOf x, x ^ m = x ^ n
+  := ⟨n % orderOf x, Nat.mod_lt n hx.orderOf_pos , pow_mod_orderOf x n⟩
+
+lemma IsOfFinOrder.exists_lt_order_eq_zpow (hx : IsOfFinOrder x) (n : ℤ)
+  : ∃ m < orderOf x, x ^ m = x ^ n
+  := by --
+  let m := n % orderOf x
+  have hmeq : m = m.toNat := by
+    rw [Int.eq_natCast_toNat]
+    refine Int.emod_nonneg n ?_
+    rw [Int.natCast_ne_zero_iff_pos]
+    exact hx.orderOf_pos
+  use m.toNat
+  have : x ^ m = x ^ m.toNat := by
+    rw [hmeq]
+    exact zpow_natCast x m.toNat
+  rw [<-this]
+  refine ⟨?_, zpow_mod_orderOf x n⟩
+  refine (Int.toNat_lt ?_).mpr ?_
+  · exact Int.natCast_toNat_eq_self.mp hmeq.symm
+  · refine Int.emod_lt_of_pos n ?_
+    exact Int.natCast_pos.mpr hx.orderOf_pos -- ∎
+
+end Prep
+
+-- If H = ⟨x⟩, then |H| = |x|.
 section Proposition2
-variable [Group H] {x : H}
+variable {H : Type*} [Group H] {x : H}
 
 -- Partial goal: that |⟨x⟩| = |x|.
 example (hx : IsOfFinOrder x) : { x ^ n | n < orderOf x }.ncard = orderOf x
@@ -57,3 +86,65 @@ example (h : Subgroup.closure {x} = ⊤) : Nat.card H = orderOf x
   exact Subgroup.mem_top v -- ∎
 
 end Proposition2
+
+-- If xⁿ = 1, then |x| divides n.
+section Proposition3
+variable {G : Type*} [Group G]
+
+example (x : G) (n : ℕ) : orderOf x ∣ n ↔ x ^ n = 1 := orderOf_dvd_iff_pow_eq_one
+example (x : G) (n : ℕ) : orderOf x ∣ n ↔ x ^ n = 1
+  := by --
+  refine ⟨?_, ?_⟩
+  · intro ⟨k, hk⟩
+    subst hk
+    rw [pow_mul, pow_orderOf_eq_one]
+    exact one_pow k
+  · intro h
+    -- Handle the easy case where n = 0 first.
+    rcases Nat.eq_zero_or_pos n with h₀ | hn
+    · subst h₀
+      exact Nat.dvd_zero _
+    -- Now for when n > 0.
+    have hF : IsOfFinOrder x := by
+      rw [isOfFinOrder_iff_pow_eq_one]
+      exact ⟨n, hn, h⟩
+    let m := orderOf x
+    have hm : x ^ m = 1 := pow_orderOf_eq_one x
+    have hmn : m ≤ n := orderOf_le_of_pow_eq_one hn h
+    let q := n / m
+    let r := n % m
+    have hqr : m * q + r = n := Nat.div_add_mod n m
+    rw [<-hqr, pow_add, pow_mul, hm, one_pow, one_mul] at h
+    have hrm : r < m := Nat.mod_lt n hF.orderOf_pos
+    have hr₀ : r = 0 := by
+      by_contra hr
+      have hr : 0 < r := Nat.zero_lt_of_ne_zero hr
+      exact hrm.not_ge (orderOf_le_of_pow_eq_one hr h)
+    rw [hr₀, add_zero] at hqr
+    use q
+    exact hqr.symm -- ∎
+
+example (x : G) (m n : ℕ) : x ^ m = 1 → x ^ n = 1 → x ^ gcd m n = 1
+  := by --
+  intro hm hn
+  let d : ℤ := gcd m n
+  have hm' : orderOf x ∣ m := orderOf_dvd_of_pow_eq_one hm
+  have hn' : orderOf x ∣ n := orderOf_dvd_of_pow_eq_one hn
+  rw [<-orderOf_dvd_iff_pow_eq_one]
+  exact dvd_gcd hm' hn' -- ∎
+
+example (x : G) (m n : ℤ) : x ^ m = 1 → x ^ n = 1 → x ^ gcd m n = 1
+  := by --
+  intro hm hn
+  let m' := m.natAbs
+  let n' := n.natAbs
+  let d := gcd m' n'
+  have hd : d = gcd m n := Int.neg_inj.mp rfl
+  have hn' : x ^ n' = 1 := pow_natAbs_eq_one.mpr hn
+  have hm' : x ^ m' = 1 := pow_natAbs_eq_one.mpr hm
+  have hm' : orderOf x ∣ m' := orderOf_dvd_of_pow_eq_one hm'
+  have hn' : orderOf x ∣ n' := orderOf_dvd_of_pow_eq_one hn'
+  rw [<-hd, zpow_natCast x d, <-orderOf_dvd_iff_pow_eq_one]
+  exact dvd_gcd hm' hn' -- ∎
+
+end Proposition3

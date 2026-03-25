@@ -1,128 +1,59 @@
 import Algebra.Prelude
 
-open DihedralGroup Cardinal
+open DihedralGroup
 
 universe u
 variable {H : Type u}
 
+open Cardinal in
 example [Fintype H] : #H = Fintype.card H := mk_fintype H
 
 section Proposition2
 variable [Group H] {x : H}
 
-@[reducible]
-private noncomputable def f₀ [Fintype H] (x : H) : Fintype (Subgroup.closure {x})
+-- Partial goal: that |⟨x⟩| = |x|.
+example (hx : IsOfFinOrder x) : { x ^ n | n < orderOf x }.ncard = orderOf x
   := by --
-  exact Fintype.ofFinite (Subgroup.closure {x}) -- ∎
-
-@[reducible]
-private noncomputable def f₁ (H : Type u) [Group H] [Fintype H] : Fintype (⊤ : Subgroup H)
-  := by --
-  exact Fintype.ofFinite (⊤ : Subgroup H) -- ∎
-
-private def φ (H : Type u) [Group H] : (⊤ : Subgroup H) ≃ H
-  := Equiv.subtypeUnivEquiv Subgroup.mem_top
-
-private lemma o₀ (hx : 0 < orderOf x) (n : ℕ) : ∃ m < orderOf x, x ^ m = x ^ n
-  := ⟨n % orderOf x, Nat.mod_lt n hx, pow_mod_orderOf x n⟩
-
-private lemma o₁ (hx : 0 < orderOf x) (n : ℤ) : ∃ m < orderOf x, x ^ m = x ^ n
-  := by --
-  let m := n % orderOf x
-  have hmeq : m = m.toNat := by
-    rw [Int.eq_natCast_toNat]
-    refine Int.emod_nonneg n ?_
-    rw [Int.natCast_ne_zero_iff_pos]
-    exact hx
-  use m.toNat
-  have : x ^ m = x ^ m.toNat := by
-    rw [hmeq]
-    exact zpow_natCast x m.toNat
-  rw [<-this]
-  refine ⟨?_, zpow_mod_orderOf x n⟩
-  refine (Int.toNat_lt ?_).mpr ?_
-  · exact Int.natCast_toNat_eq_self.mp hmeq.symm
-  · refine Int.emod_lt_of_pos n ?_
-    exact Int.natCast_pos.mpr hx -- ∎
-
-private lemma o₂ (hx : 0 < orderOf x) : Subgroup.closure {x} = { x ^ n | n < orderOf x }
-  := by --
-  refine le_antisymm ?_ ?_
-  · intro v (hv : v ∈ Subgroup.closure {x})
-    rw [Subgroup.mem_closure_singleton] at hv
-    obtain ⟨n, hn⟩ := hv
-    obtain ⟨m, hm, heq⟩ := o₁ hx n
-    refine ⟨m, hm, ?_⟩
-    rw [heq]
-    exact hn
-  · intro v ⟨m, hm, hv⟩
-    rw [SetLike.mem_coe, Subgroup.mem_closure_singleton]
-    refine ⟨m, ?_⟩
-    rw [<-hv]
-    exact zpow_natCast x m -- ∎
-
-@[reducible]
-private noncomputable def f₂ (hx : 0 < orderOf x) : Fintype (Subgroup.closure {x})
-  := by --
-  let N := orderOf x
-  have hf : Fintype { x ^ n | n < N } := (Set.Finite.image _ (Set.finite_lt_nat N)).fintype
-  rw [<-o₂ hx] at hf
-  exact hf -- ∎
-
-example [Fintype H] : haveI := f₁ H
-  Fintype.card H = Fintype.card (⊤ : Subgroup H)
-  := by --
-  let _ := f₁ H
-  exact Fintype.card_congr (φ H).symm -- ∎
-
-noncomputable example (A : Finset ℕ) (f : ℕ → H) : Fintype ↑(f '' ↑A) := by
-  exact Fintype.ofFinite ↑(f '' ↑A)
-
-example (A : Finset ℕ) (f : ℕ → H) :
-  ((A : Set ℕ).image f).ncard ≤ (A : Set ℕ).ncard := by
-  let B : Set ℕ := A
-  change (B.image f).ncard ≤ B.ncard
-  apply Set.ncard_image_le (Finset.finite_toSet A)
-
--- The nicest goal possible.
-example [Fintype H]
-  (h : Subgroup.closure {x} = ⊤)
-  (hx : 0 < orderOf x)
-  : #H = orderOf x := by
-  let N := orderOf x
-  rw [mk_fintype H, Nat.cast_inj]
-  let _ := f₁ H
-  rw [<-Fintype.card_congr (φ H)]
-  let _ := f₂ hx
-  have : Fintype.card (⊤ : Subgroup H) = Fintype.card (Subgroup.closure {x}) := by simp_rw [h]
-  rw [this]
-  let _ : Fintype { x ^ n | n < N } := (Set.Finite.image _ (Set.finite_lt_nat N)).fintype
-  have : Fintype.card (Subgroup.closure {x}) = Fintype.card { x ^ n | n < orderOf x } := by
-    simp_rw [<-o₂ hx]
+  let N : Set ℕ := Finset.range (orderOf x)
+  have heq : { x ^ n | n < orderOf x } = N.image (x ^ ·) := by
+    dsimp only [N]
+    rw [Finset.coe_range]
     rfl
-  rw [this]
+  rw [heq]
   refine le_antisymm ?_ ?_
-  · change Fintype.card { x ^ n | n < N } ≤ N
-    let S := (Finset.range N : Set ℕ).image (x ^ ·)
-    have : { x ^ n | n < N } = S := by
-      dsimp only [S]
+  · dsimp only [N]
+    have : N.ncard = orderOf x := by
+      rw [Set.ncard_coe_finset (Finset.range (orderOf x))]
+      exact Finset.card_range (orderOf x)
+    conv => rhs; rw [<-this]
+    change ((x ^ ·) '' N).ncard ≤ N.ncard
+    refine Set.ncard_image_le ?_
+    exact Finset.finite_toSet (Finset.range (orderOf x))
+  · refine Set.le_ncard_of_inj_on_range (x ^ ·) ?_ ?_ ?_
+    · intro n hn
+      refine ⟨n, ?_, rfl⟩
+      dsimp only [N]
       rw [Finset.coe_range]
-      exact Set.Subset.antisymm (fun ⦃_⦄ ↦ (·)) fun ⦃_⦄ ↦ (·)
-    let _ : Fintype S := Fintype.ofFinite ↑S
-    have : Fintype.card { x ^ n | n < N } = Fintype.card S :=
-      Fintype.card_congr' (congrArg Set.Elem this)
-    rw [this]
-    dsimp only [S]
-    sorry
-  · sorry
+      exact hn
+    · intro i hi j hj (heq : x ^ i = x ^ j)
+      rw [IsOfFinOrder.pow_eq_pow_iff_modEq hx] at heq
+      exact Nat.ModEq.eq_of_lt_of_lt heq hi hj
+    · exact Set.toFinite ((x ^ ·) '' N) -- ∎
 
-example [DecidableEq H] (hx : 0 < orderOf x) : #{ x ^ n | n < orderOf x } = orderOf x := by
-  let S := (Finset.range (orderOf x)).image (x ^ ·)
-  sorry
+-- Different ways of writing ⟨x⟩ in Lean.
+example : Subgroup.zpowers x = Subgroup.closure {x} := Subgroup.zpowers_eq_closure x
 
-noncomputable example [DecidableEq H] (hx : 0 < orderOf x) :
-  Finset.card ((Finset.range (orderOf x)).image (x ^ ·)) = orderOf x
-  := by
-  sorry
+-- |⟨x⟩| = |x|. So if a group is generated by one element (or cyclic), then the
+-- cardinality of that group is the order of that element.
+--
+-- Note that in Mathlib, the convention is that if a group element has infinite
+-- order, then `orderOf` gives 0. Similarly if a type has infinite cardinality,
+-- then `Nat.card` gives 0.
+example (h : Subgroup.closure {x} = ⊤) : Nat.card H = orderOf x
+  := by --
+  refine (orderOf_eq_card_of_forall_mem_zpowers ?_).symm
+  intro v
+  rw [Subgroup.zpowers_eq_closure, h]
+  exact Subgroup.mem_top v -- ∎
 
 end Proposition2

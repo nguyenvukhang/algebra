@@ -147,24 +147,4 @@ example (x : G) (m n : ℤ) : x ^ m = 1 → x ^ n = 1 → x ^ gcd m n = 1
   rw [<-hd, zpow_natCast x d, <-orderOf_dvd_iff_pow_eq_one]
   exact dvd_gcd hm' hn' -- ∎
 
-example (m n : ℕ) : ∃ a b, m.gcd n = a * m + b * n := by
-  let g := m.gcd n
-  have h := Nat.exists_add_mul_eq_of_gcd_dvd_of_mul_pred_le m n g
-  specialize h (Nat.dvd_refl g)
-  sorry
-
-example (m n : ℤ) : IsBezout.gcd m n = Int.gcd m n := by
-  refine Int.gcd_greatest ?_ ?_ ?_ ?_
-  · sorry
-  · sorry
-  · sorry
-  · sorry
-
-example (m n : ℤ) : ∃ a b, m.gcd n = a * m + b * n := by
-  -- have := IsBezout.gcd_eq_sum
-  have : IsBezout.gcd m n = Int.gcd m n := by
-    sorry
-  simp_rw [<-this, eq_comm]
-  exact IsBezout.gcd_eq_sum m n
-
 end Proposition3

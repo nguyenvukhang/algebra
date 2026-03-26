@@ -242,3 +242,37 @@ noncomputable example (hx : ¬IsOfFinOrder x) : G ≃ ℤ
 end Part2
 
 end Theorem4
+
+section Proposition6
+open Subgroup
+variable {G : Type*} [Group G] {x : G} (hG : zpowers x = ⊤)
+
+-- if |x| = ∞, then G = ⟨xᵃ⟩ if and only if a = ±1.
+example (hx : ¬IsOfFinOrder x) {a : ℤ} : zpowers (x ^ a) = ⊤ ↔ a = 1 ∨ a = -1
+  := by --
+  constructor
+  · intro htop
+    have hx := Subgroup.mem_top x
+    rw [<-htop, Subgroup.mem_zpowers_iff] at hx
+    obtain ⟨k, hk⟩ := hx
+    rw [<-zpow_mul x a k, <-mul_left_inj x⁻¹, mul_inv_cancel] at hk
+    rw [<-zpow_neg_one, <-zpow_add, Int.add_neg_one] at hk
+    rw [<-orderOf_dvd_iff_zpow_eq_one] at hk
+    rw [orderOf_eq_zero hx, CharP.cast_eq_zero, zero_dvd_iff] at hk
+    have : a * k = 1 := Int.eq_of_sub_eq_zero hk
+    exact Int.eq_one_or_neg_one_of_mul_eq_one this
+  · intro ha
+    cases ha with
+    | inl ha =>
+      subst ha
+      rw [zpow_one]
+      exact hG
+    | inr ha =>
+      have : zpowers x ≤ zpowers (x ^ a) := by
+        refine zpowers_le_of_mem ⟨-1, ?_⟩
+        subst ha
+        change (x ^ (-1)) ^ (-1) = x
+        rw [<-zpow_mul, Int.neg_mul_neg, mul_one, zpow_one]
+      exact eq_top_mono this hG -- ∎
+
+end Proposition6

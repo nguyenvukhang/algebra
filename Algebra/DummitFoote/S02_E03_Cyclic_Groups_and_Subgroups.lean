@@ -81,14 +81,14 @@ example : Subgroup.zpowers x = Subgroup.closure {x} := Subgroup.zpowers_eq_closu
 -- then `Nat.card` gives 0.
 example (h : Subgroup.closure {x} = ⊤) : Nat.card H = orderOf x
   := by --
-  refine (orderOf_eq_card_of_forall_mem_zpowers ?_).symm
-  intro v
-  rw [Subgroup.zpowers_eq_closure, h]
-  exact Subgroup.mem_top v -- ∎
+  rw [<-Subgroup.zpowers_eq_closure x] at h
+  exact (orderOf_eq_card_of_zpowers_eq_top h).symm -- ∎
 
 end Proposition2
 
 -- If xⁿ = 1, then |x| divides n.
+--
+-- In fact, the theorems below show one better: that xⁿ = 1 ↔ |x| divides n.
 section Proposition3
 variable {G : Type*} [Group G]
 
@@ -166,3 +166,79 @@ example (x : G) (m n : ℤ) : x ^ m = 1 → x ^ n = 1 → x ^ gcd m n = 1
     rw [this, <-h, zpow_add, zpow_mul, zpow_mul, hm, hn, one_zpow, one_zpow, one_mul] -- ∎
 
 end Proposition3
+
+-- Any two cyclic groups of the same order are isomorphic. More specifically,
+--  (1) if ⟨x⟩ and ⟨y⟩ are both cyclic groups of order n. Then the map
+--          φ : ⟨x⟩ → ⟨y⟩,  φ(xᵏ) = yᵏ
+--      is well-defined and is an isomorphism.
+--  (2) if ⟨x⟩ is an infinite cyclic group, the map
+--          φ : ℤ → ⟨x⟩,  φ(k) = xᵏ
+--      is well-defined and is an isomorphism.
+section Theorem4
+variable {G H : Type*} [Group G] [Group H] {x : G} {y : H}
+
+-- For finite-order cyclic groups, this function provides an interface for
+-- extracting a ℕ power instead of a ℤ.
+example (hx : IsOfFinOrder x) (hG : Subgroup.zpowers x = ⊤)
+  : ∀ g : G, ∃ k : ℕ, x ^ k = g
+  := by --
+  intro g
+  let n : ℤ := orderOf x
+  have hn₀ : 0 < n := Int.natCast_pos.mpr hx.orderOf_pos
+  have hg := Subgroup.mem_top g
+  rw [<-hG] at hg
+  rw [Subgroup.mem_zpowers_iff] at hg
+  obtain ⟨k, hk⟩ := hg
+  let i := k % n
+  have hi₀ : 0 ≤ i := Int.emod_nonneg k hn₀.ne'
+  use i.natAbs
+  have : x ^ i.natAbs = x ^ i := by
+    rw [<-Int.natAbs_of_nonneg hi₀]
+    exact (zpow_natCast x i.natAbs).symm
+  rw [this]
+  rw [zpow_mod_orderOf]
+  exact hk -- ∎
+
+-- In part (1) of Theorem 4, we deal with two cyclic groups of the same order.
+section Part1
+variable (heq : orderOf x = orderOf y)
+  (hG : Subgroup.zpowers x = ⊤)
+  (hH : Subgroup.zpowers y = ⊤)
+
+noncomputable example (hFx : IsOfFinOrder x) : G ≃* H
+  := by --
+  have hFy : IsOfFinOrder y := by
+    rw [<-orderOf_pos_iff, <-heq, orderOf_pos_iff]
+    exact hFx
+  -- Some extra results.
+  have hG_card : orderOf x = Nat.card G := orderOf_eq_card_of_zpowers_eq_top hG
+  have hH_card : orderOf y = Nat.card H := orderOf_eq_card_of_zpowers_eq_top hH
+  have : Nat.card G = Nat.card H := by
+    rw [<-hG_card, <-hH_card];
+    exact heq
+  -- The main solve.
+  let φ₁ := zpowers_equiv_zmod_orderOf hG
+  let φ₂ := zpowers_equiv_zmod_orderOf hH
+  rw [<-heq] at φ₂
+  have h (φ : Additive G ≃+ Additive H) : G ≃* H
+    := by --
+    refine { toEquiv := Additive.ofMul.trans (φ.toEquiv.trans Additive.ofMul.symm), map_mul' := ?_ }
+    intro g₁ g₂
+    rw [AddEquiv.toEquiv_eq_coe, Additive.ofMul_symm_eq, Equiv.toFun_as_coe]
+    simp only [Equiv.trans_apply, ofMul_mul, EquivLike.coe_coe, map_add, toMul_add] -- ∎
+  exact h (φ₁.trans φ₂.symm) -- ∎
+
+end Part1
+
+-- In part(2), the claim is that if ⟨x⟩ = ∞, then ⟨x⟩ ≃ ℤ.
+section Part2
+variable (hG : Subgroup.zpowers x = ⊤)
+noncomputable example (hx : ¬IsOfFinOrder x) : G ≃ ℤ
+  := by --
+  have := zpowers_equiv_zmod_orderOf hG
+  rw [orderOf_eq_zero hx] at this
+  exact this.toEquiv -- ∎
+
+end Part2
+
+end Theorem4

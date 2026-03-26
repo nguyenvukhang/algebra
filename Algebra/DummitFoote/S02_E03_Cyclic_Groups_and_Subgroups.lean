@@ -1,4 +1,5 @@
 import Algebra.Prelude
+import Algebra.Patches
 
 open DihedralGroup
 
@@ -146,5 +147,22 @@ example (x : G) (m n : ℤ) : x ^ m = 1 → x ^ n = 1 → x ^ gcd m n = 1
   have hn' : orderOf x ∣ n' := orderOf_dvd_of_pow_eq_one hn'
   rw [<-hd, zpow_natCast x d, <-orderOf_dvd_iff_pow_eq_one]
   exact dvd_gcd hm' hn' -- ∎
+
+-- The method that Dummit & Foote used.
+example (x : G) (m n : ℤ) : x ^ m = 1 → x ^ n = 1 → x ^ gcd m n = 1
+  := by --
+  intro hm hn
+  if hm₀ : m = 0 then
+    subst hm₀
+    rw [gcd_zero_left, <-Int.abs_eq_normalize, zpow_abs_eq_one x n]
+    exact hn
+  else if hn₀ : n = 0 then
+    subst hn₀
+    rw [gcd_zero_right, <-Int.abs_eq_normalize, zpow_abs_eq_one x m]
+    exact hm
+  else
+    obtain ⟨a, b, h⟩ := Int.gcd_eq_sum hm₀ hn₀
+    have : x ^ gcd m n = x ^ (m.gcd n : ℤ) := zpow_eq_zpow_iff_modEq.mpr rfl
+    rw [this, <-h, zpow_add, zpow_mul, zpow_mul, hm, hn, one_zpow, one_zpow, one_mul] -- ∎
 
 end Proposition3

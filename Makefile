@@ -12,7 +12,7 @@ check: generate
 	slope check
 
 generate:
-	slope generate Algebra.Mathlib
+	slope generate Algebra.Patches
 
 sorry:
 	rg sorry -t lean --colors 'match:fg:yellow' --colors 'line:fg:white'

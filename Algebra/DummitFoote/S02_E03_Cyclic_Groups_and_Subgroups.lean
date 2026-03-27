@@ -251,7 +251,8 @@ variable {G : Type*} [Group G] {x : G} (hG : zpowers x = ⊤)
 example (hx : ¬IsOfFinOrder x) {a : ℤ} : zpowers (x ^ a) = ⊤ ↔ a = 1 ∨ a = -1
   := by --
   constructor
-  · intro htop
+  · -- G = ⟨xᵃ⟩ → a = ±1.
+    intro htop
     have hx := Subgroup.mem_top x
     rw [<-htop, Subgroup.mem_zpowers_iff] at hx
     obtain ⟨k, hk⟩ := hx
@@ -261,7 +262,8 @@ example (hx : ¬IsOfFinOrder x) {a : ℤ} : zpowers (x ^ a) = ⊤ ↔ a = 1 ∨ 
     rw [orderOf_eq_zero hx, CharP.cast_eq_zero, zero_dvd_iff] at hk
     have : a * k = 1 := Int.eq_of_sub_eq_zero hk
     exact Int.eq_one_or_neg_one_of_mul_eq_one this
-  · intro ha
+  · -- a = ±1 → G = ⟨xᵃ⟩.
+    intro ha
     cases ha with
     | inl ha =>
       subst ha
@@ -274,5 +276,69 @@ example (hx : ¬IsOfFinOrder x) {a : ℤ} : zpowers (x ^ a) = ⊤ ↔ a = 1 ∨ 
         change (x ^ (-1)) ^ (-1) = x
         rw [<-zpow_mul, Int.neg_mul_neg, mul_one, zpow_one]
       exact eq_top_mono this hG -- ∎
+
+-- If x has finite order, then xᵃ has finite order too.
+example (hx : IsOfFinOrder x) (a : ℤ) : IsOfFinOrder (x ^ a)
+  := by --
+  exact IsOfFinOrder.zpow hx -- ∎
+
+-- For finite subgroups, if that subgroup has a bijection to the whole group,
+-- then that subgroup *is* the whole group.
+example [Finite G] (H : Subgroup G) : H ≃ G → H = ⊤
+  := by --
+  exact (Subgroup.eq_top_of_card_eq H <| Nat.card_congr ·) -- ∎
+
+-- But it feels like this should hold for infinite groups too. But wait.
+-- Consider ℤ and its subgroup 2ℤ (under addition).
+example : AddGroup ℤ := Int.instAddGroup
+private def Z₂ : AddSubgroup ℤ
+  := by --
+  exact {
+    carrier := { 2 * z | z : ℤ }
+    zero_mem' := ⟨0, Int.mul_zero 2⟩
+    add_mem' := by
+      intro a b ⟨x, ha⟩ ⟨y, hb⟩
+      subst ha hb
+      exact ⟨x + y, Int.mul_add 2 x y⟩
+    neg_mem' := by
+      intro a ⟨x, ha⟩
+      subst ha
+      exact ⟨-x, Int.mul_neg 2 x⟩
+  } -- ∎
+example : Z₂ ≃+ ℤ
+  := by --
+  have h₂ : (2 : ℤ) ≠ 0 := zero_lt_two.ne'
+  exact {
+    toFun a := a / 2
+    invFun a := ⟨2 * a, a, rfl⟩
+    left_inv := by
+      rw [Function.leftInverse_iff_comp]
+      funext ⟨a, x, ha⟩
+      subst ha
+      norm_num
+    right_inv := by
+      rw [Function.rightInverse_iff_comp]
+      funext a
+      exact Int.mul_ediv_cancel_left a h₂
+    map_add' := by
+      intro ⟨a, x, ha⟩ ⟨b, y, hb⟩
+      subst ha hb
+      rw [mul_div_cancel_left₀ _ h₂, mul_div_cancel_left₀ _ h₂]
+      change (2 * x + 2 * y) / 2 = x + y
+      rw [Int.add_mul_ediv_left (2 * x) y h₂, Int.add_left_inj y]
+      exact Int.mul_ediv_cancel_left x h₂
+  } -- ∎
+example : Z₂ ≠ ⊤
+  := by --
+  refine (AddSubgroup.eq_top_iff' Z₂).not.mpr ?_
+  push_neg
+  refine ⟨1, ?_⟩
+  intro ⟨x, hx⟩
+  have : Even (1 : ℤ) := by
+    use x
+    rw [<-hx]
+    exact Int.two_mul x
+  rw [<-Int.not_odd_iff_even] at this
+  exact this (Int.odd_iff.mpr rfl) -- ∎
 
 end Proposition6

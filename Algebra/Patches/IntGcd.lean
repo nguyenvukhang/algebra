@@ -28,7 +28,7 @@ private lemma l₀ (ha₀ : 0 < a) (hb₀ : 0 < b) : ∃ x y, a * x + b * y = In
     have hr : r ∈ S ∨ r = 0 := by
       rw [or_iff_not_imp_right]
       intro hr₀
-      replace hr₀ : 0 < r := (Int.Nonneg.mod a d ha₀.le).lt_of_ne' hr₀
+      replace hr₀ : 0 < r := (Int.emod_nonneg a hd₀.ne').lt_of_ne' hr₀
       have : q * d + r = a := Int.ediv_mul_add_emod a d
       have : r = a * (1 - q * s) + b * (-q * t) := by grind only
       exact ⟨1 - q * s, -q * t, this, hr₀⟩
@@ -45,7 +45,7 @@ private lemma l₀ (ha₀ : 0 < a) (hb₀ : 0 < b) : ∃ x y, a * x + b * y = In
     have hr : r ∈ S ∨ r = 0 := by
       rw [or_iff_not_imp_right]
       intro hr₀
-      replace hr₀ : 0 < r := (Int.Nonneg.mod b d hb₀.le).lt_of_ne' hr₀
+      replace hr₀ : 0 < r := (Int.emod_nonneg b hd₀.ne').lt_of_ne' hr₀
       have : q * d + r = b := Int.ediv_mul_add_emod b d
       have : r = a * (-q * s) + b * (1 - q * t) := by grind only
       exact ⟨-q * s, 1 - q * t, this, hr₀⟩

@@ -245,6 +245,7 @@ end Theorem4
 
 section Proposition6
 open Subgroup
+-- G is a cyclic group, with G = ⟨x⟩.
 variable {G : Type*} [Group G] {x : G} (hG : zpowers x = ⊤)
 
 -- if |x| = ∞, then G = ⟨xᵃ⟩ if and only if a = ±1.
@@ -342,3 +343,91 @@ example : Z₂ ≠ ⊤
   exact this (Int.odd_iff.mpr rfl) -- ∎
 
 end Proposition6
+
+section Theorem7
+open Subgroup
+-- G is a cyclic group, with G = ⟨x⟩.
+variable {G : Type*} [Group G] {x : G} (hG : zpowers x = ⊤)
+
+-- Every subgroup of G is cyclic.
+example (K : Subgroup G) : ∃ k, zpowers k = K
+  := by --
+  cases eq_or_ne K ⊥ with
+  | inl hbot =>
+    subst hbot
+    exact ⟨1, zpowers_one_eq_bot⟩
+  | inr hbot =>
+    rw [ne_bot_iff_exists_ne_one] at hbot
+    obtain ⟨⟨g, hgK⟩, hg₁⟩ := hbot
+    have hg' (g : G) : ∃ a : ℤ, x ^ a = g := by
+      rw [<-Subgroup.mem_zpowers_iff, hG]
+      exact Subgroup.mem_top g
+    obtain ⟨a, ha⟩ := hg' g
+    have ha₀ : a ≠ 0 := by
+      by_contra ha₀
+      subst ha₀
+      rw [zpow_zero] at ha
+      refine hg₁ ?_
+      exact (mk_eq_one K).mpr ha.symm
+    let P := { b : ℤ | x ^ b ∈ K ∧ b > 0 }
+    have hP₀ : P.Nonempty
+      := by --
+      use a.sign * a
+      rw [Int.sign_mul_self_eq_abs]
+      refine ⟨?_, abs_pos.mpr ha₀⟩
+      cases abs_choice a with
+      | inl ha' =>
+        rw [ha', ha]
+        exact hgK
+      | inr ha' =>
+        rw [ha', zpow_neg, ha, K.inv_mem_iff]
+        exact hgK -- ∎
+    have : ∃ x, Minimal (· ∈ P) x := by
+      refine Set.IsPWO.exists_minimal ?_ hP₀
+      rw [Set.isPWO_iff_isWF]
+      exact BddBelow.isWF ⟨0, fun _ ⟨_, h⟩ => h.le⟩
+    obtain ⟨d, ⟨hxdK, hd₀⟩, hd'⟩ := this
+    -- xᵈ is precisely the k that satisfies ⟨k⟩ = K, making K cyclic.
+    use x ^ d
+    -- It remains to show ⟨xᵈ⟩ = K. We do this by showing inclusion both ways.
+    -- ⟨xᵈ⟩ ≤ K because xᵈ ∈ K.
+    refine le_antisymm (zpowers_le_of_mem hxdK) ?_
+    -- Now we show that K ≤ ⟨xᵈ⟩.
+    intro g hgK
+    obtain ⟨a, ha⟩ := hg' g
+    let q := a / d
+    let r := a % d
+    have hrd : r < d := (Int.emod_lt_of_pos a hd₀)
+    have : a = q * d + r := (Int.ediv_mul_add_emod a d).symm
+    have : x ^ r = x ^ a * (x ^ d) ^ (-q) := by
+      rw [<-zpow_mul x d (-q), <-zpow_add x a (d * -q)]
+      refine congrArg (x ^ ·) ?_
+      rw [Int.mul_neg d q, Int.add_neg_eq_sub]
+      exact Int.emod_def a d
+    have : x ^ r ∈ K := by
+      rw [this]
+      refine K.mul_mem ?_ (K.zpow_mem hxdK (-q))
+      rw [ha]
+      exact hgK
+    have : r ∈ P ∨ r = 0 := by
+      rw [or_iff_not_imp_right]
+      intro hr₀
+      replace hr₀ : 0 < r := (Int.emod_nonneg a hd₀.ne').lt_of_ne' hr₀
+      refine ⟨this, hr₀⟩
+    have : r = 0 := by
+      refine this.resolve_left ?_
+      by_contra hrP
+      refine (hd' hrP hrd.le).not_gt hrd
+    have : x ^ a = (x ^ d) ^ q := by
+      rw [<-zpow_mul]
+      refine congrArg (x ^ ·) ?_
+      exact (Int.mul_ediv_cancel_of_emod_eq_zero this).symm
+    rw [<-ha, this]
+    exact zpow_mem_zpowers (x ^ d) q -- ∎
+
+-- Maybe it's time for a notation change. Replace all the `zpowers x = ⊤` with
+-- IsCyclic.
+example (K : Subgroup G) : (∃ k, zpowers k = K) ↔ IsCyclic K := by
+  exact Iff.symm (Subgroup.isCyclic_iff_exists_zpowers_eq_top K)
+
+end Theorem7
